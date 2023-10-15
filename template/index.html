@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WQP Project</title>
+    
+    <!--Bootstrap css and script cdns-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw-src.css" integrity="sha512-vJfMKRRm4c4UupyPwGUZI8U651mSzbmmPgR3sdE3LcwBPsdGeARvUM5EcSTg34DK8YIRiIo+oJwNfZPMKEQyug==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js" integrity="sha512-ozq8xQKq6urvuU6jNgkfqAmT7jKN2XumbrX1JiB3TnF7tI48DPI4Gy1GXKD/V3EExgAs1V+pRO7vwtS1LHg0Gw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
+    <style>
+      body{
+        font-family: "Roboto";
+        font-size: 18px;
+      }
+      .popupdiv {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom:0;
+        right:0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+        z-index: 2000; /* Ensure it's on top of other content */
+    }
+
+    .popup-content {
+        position: absolute;
+        background-color: white;
+        overflow:auto;
+        margin: 5%;
+        width: 90%;
+        height: 90%;
+        padding: 12px;
+        border-radius: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+    .maps{
+      position: relative;
+      width: 70%;
+      height: 70%;
+      margin: 5px;
+    }
+    
+    @keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  border: 6px solid rgba(0, 0, 0, 0.3);
+  border-top: 6px solid #007bff; /* Change the color to your preference */
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto; /* Center the spinner horizontally */
+  margin-top: 350px; /* Adjust the margin-top as needed */
+  z-index: 1000; /* Initially hide the spinner */
+}
+#submitButton{
+  position: relative;
+  left: 30%;
+  top: 20%;
+}
+
+    </style>
+</head>
+<body>
+  <div id="popup" class="popupdiv">
+    <div class="popup-content">
+      <div style="overflow: auto;position: relative;">
+        <div style="position: sticky;">
+        <h2 >Parameters Map</h2>
+        <button id="closePopup" style="position:absolute; top:5px;right:5px;">Close</button></div>
+        <div id="displaydiv">
+          <p>Chlorophyll-a Map:</p>
+          <div id="chlmap" class="maps"></div>
+          <p>Nitrate Map:</p>
+          <div id="nimap" class="maps"></div>
+          <p>Phosphate Map:</p>
+          <div id="phmap" class="maps"></div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+  <div id="loader" class="popupdiv">
+    <div class="loading-spinner"></div>
+  </div>
+
+    <div class="container">
+        <nav class="navbar navbar-light justify-content-center" style="background-color: #e3f2fd; ">
+          <nav class="nav ">
+            WQP Project - Krishnagiri
+          </nav>
+        </nav>  
+        <form id="year">
+        {% csrf_token %}
+        <div class="row">
+          <div class="col-md">
+          <article>
+            Welcome,<br>
+                    Region                  :  Krishnagiri<br>
+                    Period                  :  2016-2020<br>
+                    Optical Prameters       :  Chlorophyll-a<br>
+                    Non-Optical Parameters  :  Nitrate, Phosphate<br><br>
+                    
+                <br><br>
+          </article>
+          </div>
+          <div class="col-md" style="font-size: 22px;">Choose a season, year and draw your area 
+            of interest on the map then submit to see the parameter's maps.<br><br>
+            </div>
+            </div>
+            </form>
+            
+            <div class="row">
+              
+              <div class="col-md-8"><div id="mapdiv" style="position: relative;  height:400px;width:80%"></div>
+              </div>
+              <div class="col-md">
+                <div class="row">
+                  <div class="col-md">
+                Select a season<br>
+          <select id="season">
+                <option value="winter">Winter</option>
+                <option value="summer">Summer</option>
+                <option value="swm">South-West Monsoon</option>
+                <option value="nem">North-East Monsoon</option>
+            </select></div>
+            <div class="col-md">
+                Select a year
+            <div class="form-check">
+                
+                <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1">
+                <label class="form-check-label" for="flexRadioDefault1">
+                  2016
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault2" checked>
+                <label class="form-check-label" for="flexRadioDefault2">
+                  2017
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault3">
+                <label class="form-check-label" for="flexRadioDefault3">
+                  2018
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault4" >
+                <label class="form-check-label" for="flexRadioDefault4">
+                  2019
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault5" >
+                <label class="form-check-label" for="flexRadioDefault5">
+                  2020
+                </label>
+              </div></div></div>
+                <button class="btn btn-light" id="submitButton">Submit</button>
+              </div>
+            
+          </div>
+        </div>  
+  
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    
+    $(document).ready(function () {
+
+      var map = L.map('mapdiv').setView([12.496532530614118, 78.17399881192169], 13);
+
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+      var drawnItems = new L.FeatureGroup();
+      map.addLayer(drawnItems);
+
+      // Initialize the draw control and pass it the FeatureGroup of editable layers
+      var drawControl = new L.Control.Draw({
+        draw:{
+            rectangle: true,
+            circle: false,
+            polygon: false,
+            marker:false,
+            polyline:false,
+            circlemarker:false,
+          },
+
+          edit: {
+              featureGroup: drawnItems,
+              edit:true,
+              remove:true,
+          }
+      });
+      map.addControl(drawControl);
+      var layer;
+      map.on(L.Draw.Event.CREATED, function (e) {
+      drawnItems.addLayer(e.layer);
+      layer = e.layer;
+      
+      });
+      
+    $("#submitButton").click(function () {
+      // Get the selected value
+      var selectedYear = $("input[name='flexRadioDefault']:checked").siblings('label').text().trim();
+      var selectedSeason = document.getElementById("season").value
+      // Send the selected value to the backend using AJAX
+      
+      var lastLayer = drawnItems.getLayers().pop(); // Get the last drawn feature
+            if (lastLayer) {
+              document.getElementById("loader").style.display = 'block';
+                var bounds = lastLayer.getBounds(); // Get the boundary coordinates
+                //console.log(bounds.getNorthEast().lat)
+                $.ajax({
+                  type: "POST",
+                  url: "/home/",  // Replace with the actual URL to your backend view
+                  
+                  data: {
+                    year: selectedYear,
+                    season: selectedSeason,
+                    neLat:bounds.getNorthEast().lat, 
+                    neLng:bounds.getNorthEast().lng,
+                    swLat:bounds.getSouthWest().lat,
+                    swLng:bounds.getSouthWest().lng,
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
+                  },
+                  success: function (data) {
+                    document.getElementById("loader").style.display = 'none';
+                    $("#popup").show();
+                    document.getElementById("chlmap").innerHTML = data.map0;
+                    document.getElementById("nimap").innerHTML = data.map1;
+                    document.getElementById("phmap").innerHTML = data.map2;
+                  },
+                  error: function (error) {
+                    // Handle error response from the backend
+                    console.error("Error sending data: " + error);
+                  },
+                });
+            } else {
+                alert("Draw feature and click submit")
+            }
+      
+     
+    });
+  });
+  $("#closePopup").click(function() {
+    $("#popup").hide();
+});
+</script>
+</body>
+</html>
